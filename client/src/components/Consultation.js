@@ -8,6 +8,7 @@ const Consultation = () => {
   const [userInput, setUserInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [profile, setProfile] = useState(null);
+  const [conversationContext, setConversationContext] = useState('');
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -21,7 +22,9 @@ const Consultation = () => {
 
       if (profileData) {
         setProfile(profileData);
-        handleAIResponse(`Hi ${profileData.full_name}, I see your goal is to ${profileData.goal}. Let's begin your fitness consultation.`);
+        const initialMessage = `Hi ${profileData.full_name}, I see your goal is to ${profileData.goal}. Let's quickly go over your preferences to create your workout plan.`;
+        handleAIResponse(initialMessage);
+        setConversationContext(initialMessage);
       } else {
         navigate('/profile-setup');
       }
@@ -37,6 +40,20 @@ const Consultation = () => {
     setConsultationMessages(updatedMessages);
     setUserInput('');
 
+    const updatedContext = `${conversationContext}\nUser: ${userInput}`;
+    setConversationContext(updatedContext);
+
+    await handleAIConversation(updatedMessages, updatedContext);
+  };
+
+  const handleAIResponse = (message, updatedMessages = consultationMessages) => {
+    const newMessages = [...updatedMessages, { role: 'assistant', content: message }];
+    setConsultationMessages(newMessages);
+    const updatedContext = `${conversationContext}\nAI: ${message}`;
+    setConversationContext(updatedContext);
+  };
+
+  const handleAIConversation = async (updatedMessages, updatedContext) => {
     setLoading(true);
 
     try {
@@ -45,21 +62,22 @@ const Consultation = () => {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ profile, messages: updatedMessages }),
+        body: JSON.stringify({ profile, conversationContext: updatedContext }),
       });
 
       const data = await response.json();
-      setConsultationMessages([...updatedMessages, { role: 'assistant', content: data.reply }]);
+
+      if (data.reply && typeof data.reply === 'string') {
+        handleAIResponse(data.reply, updatedMessages);
+      } else {
+        console.error('AI response is null or invalid:', data);
+        handleAIResponse('Sorry, there was an issue with the response. Could you try again?', updatedMessages);
+      }
     } catch (error) {
       console.error('Error during consultation:', error);
     }
 
     setLoading(false);
-  };
-
-  const handleAIResponse = (message) => {
-    const updatedMessages = [...consultationMessages, { role: 'assistant', content: message }];
-    setConsultationMessages(updatedMessages);
   };
 
   const finishConsultation = async () => {
@@ -77,7 +95,7 @@ const Consultation = () => {
       const data = await response.json();
       if (data.workoutPlan) {
         handleAIResponse('Your workout plan has been generated. You can now view it in your calendar.');
-        navigate('/workout-calendar'); // Redirect to the calendar
+        navigate('/workout-calendar');
       } else {
         handleAIResponse('An error occurred while generating the workout plan.');
       }
@@ -126,13 +144,14 @@ const Consultation = () => {
             {loading ? <CircularProgress size={24} /> : 'Send'}
           </Button>
 
+          {/* Add Finish Consultation Button */}
           <Button
-            variant="outlined"
+            variant="contained"
             color="secondary"
             onClick={finishConsultation}
             fullWidth
             sx={{ mt: 2 }}
-            disabled={loading}
+            disabled={loading || consultationMessages.length < 5}
           >
             {loading ? <CircularProgress size={24} /> : 'Finish Consultation and Generate Workout Plan'}
           </Button>
@@ -143,3 +162,4 @@ const Consultation = () => {
 };
 
 export default Consultation;
+

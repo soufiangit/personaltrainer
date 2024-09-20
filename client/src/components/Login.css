@@ -1,0 +1,41 @@
+.login-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    background-color: #e3f2fd;
+  }
+  
+  .login-form {
+    width: 100%;
+    max-width: 450px;
+    background-color: #ffffff;
+    padding: 40px;
+    border-radius: 12px;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
+  }
+  
+  .login-form h4 {
+    text-align: center;
+    margin-bottom: 30px;
+    color: #333;
+  }
+  
+  .login-form .MuiTextField-root {
+    margin-bottom: 20px;
+    width: 100%;
+  }
+  
+  .login-form .MuiButton-root {
+    background-color: #42a5f5;
+    color: white;
+    width: 100%;
+    padding: 12px;
+    font-size: 16px;
+    transition: background-color 0.3s ease;
+  }
+  
+  .login-form .MuiButton-root:hover {
+    background-color: #1e88e5;
+  }
+  

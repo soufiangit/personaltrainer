@@ -4,13 +4,9 @@ import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import dotenv from 'dotenv';
 import OpenAI from 'openai';
-import { createClient } from '@supabase/supabase-js';
 
 // Load environment variables from .env
 dotenv.config();
-
-// Initialize Supabase client
-const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_KEY);
 
 const app = express();
 
@@ -36,69 +32,42 @@ const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY || 'your_fallback_api_key_here',
 });
 
-// Consultation Route
+// Consultation Route with Enhanced Error Logging
 app.post('/consultation', async (req, res) => {
-  const { profile } = req.body;
+  const { profile, conversationContext } = req.body;
 
   if (!profile) {
     return res.status(400).json({ error: 'User profile is required.' });
   }
 
   const messages = [
-    { role: 'system', content: 'You are a fitness consultant analyzing user data to create a personalized workout plan and provide further consultation.' },
-    {
-      role: 'user',
-      content: `
-        Here is the user's profile:
-        - Full Name: ${profile.fullName || 'Not provided'}
-        - Age: ${profile.age || 'Not provided'}
-        - Gender: ${profile.gender || 'Not provided'}
-        - Weight: ${profile.weight || 'Not provided'} kg
-        - Height: ${profile.height || 'Not provided'} cm
-        - Body Fat Percentage: ${profile.bodyFat ? profile.bodyFat : 'Not provided'}
-        - Fitness Goal: ${profile.goal || 'Not provided'}
-        - Activity Level: ${profile.activityLevel || 'Not provided'}
-        - Workout Days per Week: ${profile.workoutDays || 'Not provided'}
-        - Preferred Workout Time: ${profile.preferredTime || 'Not provided'}
-        - Diet Preference: ${profile.dietPreference || 'Not provided'}
-        - Injuries: ${profile.injuries || 'None'}
-        - Sports Experience: ${profile.sports ? 'Athlete' : 'Non-athlete'}
-        
-        Use this information to start a personalized consultation. Based on the user's activity level (${profile.activityLevel || 'Not provided'}) and fitness goal (${profile.goal || 'Not provided'}), ask relevant follow-up questions or provide advice to guide them toward their fitness goal.
-      `,
-    },
+    { role: 'system', content: 'You are a fitness coach. Your job is to remember past conversations and ask follow-up questions based on user responses.' },
+    { role: 'user', content: conversationContext },
   ];
 
   try {
-    console.log('Sending request to OpenAI:', messages);
-
     const completion = await openai.chat.completions.create({
       model: 'gpt-3.5-turbo',
-      messages: messages,
+      messages,
     });
 
-    console.log('OpenAI response:', completion);
+    const aiResponse = completion.choices[0].message.content;
 
-    if (completion && completion.choices && completion.choices.length > 0) {
-      const reply = completion.choices[0].message.content;
-      res.json({ reply });
-    } else {
-      throw new Error('No valid message found in the response');
+    // Analyzing AI response before sending it back
+    if (aiResponse.toLowerCase().includes("great to see")) {
+      const refinedResponse = `I see you're comfortable with high-intensity workouts. Let's get into the details. How many days a week can you commit to?`;
+      return res.json({ reply: refinedResponse });
     }
+
+    res.json({ reply: aiResponse });
   } catch (error) {
-    console.error('Error during consultation:', error);
-
-    if (error.response) {
-      console.error('API response data:', error.response.data);
-    } else {
-      console.error('No response data');
-    }
-
+    console.error('Error generating AI response:', error.message);
     res.status(500).json({ error: 'Failed to process consultation' });
   }
 });
 
-// Route to generate workout plan based on consultation
+
+// Workout Plan Route with Enhanced Error Logging
 app.post('/generate-workout-plan', async (req, res) => {
   const { profile, consultationResults } = req.body;
 
@@ -110,8 +79,10 @@ app.post('/generate-workout-plan', async (req, res) => {
     const messages = [
       { role: 'system', content: 'You are a personal trainer generating a workout plan based on the consultation.' },
       { role: 'user', content: `User profile: ${JSON.stringify(profile)}` },
-      { role: 'user', content: `Consultation results: ${consultationResults}` },
+      { role: 'user', content: `Consultation results: ${JSON.stringify(consultationResults)}` },
     ];
+
+    console.log('Sending request to OpenAI for workout plan:', JSON.stringify(messages, null, 2));
 
     const completion = await openai.chat.completions.create({
       model: 'gpt-3.5-turbo',
@@ -121,44 +92,24 @@ app.post('/generate-workout-plan', async (req, res) => {
     if (completion && completion.choices && completion.choices.length > 0) {
       const workoutPlan = completion.choices[0].message.content;
 
-      // Insert workout plan into Supabase
-      const { error } = await supabase
-        .from('workout_plans')
-        .insert([
-          {
-            user_id: profile.id,
-            workout_date: new Date().toISOString().split('T')[0], // Set today's date for workout
-            plan: workoutPlan,
-            created_at: new Date().toISOString(),
-          },
-        ]);
-
-      if (error) throw error;
+      // Here you would normally store the generated workout plan in your database
+      // For example:
+      // const { error } = await supabase.from('workout_plans').insert([{ user_id: profile.id, plan: workoutPlan }]);
 
       res.json({ workoutPlan });
     } else {
       throw new Error('No valid workout plan found in the response');
     }
   } catch (error) {
-    console.error('Error generating workout plan:', error);
+    console.error('Error generating workout plan:', error.message);
+    console.error('Stack trace:', error.stack); // Log full stack trace for debugging
+    if (error.response) {
+      console.error('API response data:', error.response.data); // Log OpenAI API response
+    } else {
+      console.error('No response data from OpenAI');
+    }
     res.status(500).json({ error: 'Failed to generate workout plan' });
   }
-});
-
-// Health check route
-app.get('/health', (req, res) => {
-  res.send('Server is healthy');
-});
-
-// 404 handler for unknown routes
-app.use((req, res) => {
-  res.status(404).json({ error: 'Route not found' });
-});
-
-// Error handling middleware
-app.use((err, req, res, next) => {
-  console.error('Unhandled error:', err);
-  res.status(500).json({ error: 'Internal server error' });
 });
 
 // Start the server

@@ -1,68 +1,59 @@
 import React, { useEffect, useState } from 'react';
-import { supabase } from '../supabaseClient';
+import axios from 'axios';
 import { Container, Typography, Card, CardContent, Button, CircularProgress } from '@mui/material';
-import { CheckCircle, AccessTime } from '@mui/icons-material';
-import { useNavigate } from 'react-router-dom';
+import { CheckCircle } from '@mui/icons-material';
 
 const WorkoutPlan = () => {
   const [workoutPlan, setWorkoutPlan] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [profile, setProfile] = useState(null);
-  const navigate = useNavigate();
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     const fetchWorkoutPlan = async () => {
-      const { data: userData } = await supabase.auth.getUser();
-      const { data: profileData } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', userData.user.id)
-        .single();
+      try {
+        setLoading(true);
+        setError(null);
 
-      if (profileData) {
-        setProfile(profileData);
-        try {
-          setLoading(true);
-          const response = await fetch('http://localhost:5001/generate-workout-plan', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ profile: profileData }),
-          });
-          const data = await response.json();
+        const response = await fetch('http://localhost:5001/generate-workout-plan', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+
+        const data = await response.json();
+        if (data.workoutPlan) {
           setWorkoutPlan(data.workoutPlan);
-        } catch (error) {
-          console.error('Error fetching workout plan:', error);
-        } finally {
-          setLoading(false);
+          console.log('Workout plan generated:', data.workoutPlan);
+        } else {
+          throw new Error('Failed to generate workout plan');
         }
-      } else {
-        navigate('/profile-setup');
+      } catch (err) {
+        console.error('Error generating workout plan:', err);
+
+        if (err.response && err.response.status === 401) {
+          setError('Unauthorized: Invalid API key.');
+          console.error('Error: Invalid API key');
+        } else if (err.response && err.response.status === 403) {
+          setError('Forbidden: API access is blocked.');
+          console.error('Error: API access blocked');
+        } else if (err.response && err.response.status === 404) {
+          setError('Workout plan not found.');
+          console.error('Error: Workout plan not found');
+        } else if (err.code === 'ERR_NETWORK') {
+          setError('Network error. Please check your connection.');
+          console.error('Network error occurred:', err);
+        } else {
+          setError('An unexpected error occurred.');
+          console.error('Unexpected error:', err);
+        }
+      } finally {
+        setLoading(false);
       }
     };
 
     fetchWorkoutPlan();
-  }, [navigate]);
-
-  const handleCompleteWorkout = async (workoutId) => {
-    setLoading(true);
-    try {
-      const response = await fetch('http://localhost:5001/complete-workout', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ userId: profile.id, workoutId }),
-      });
-      const data = await response.json();
-      alert('Workout completed! Follow-up: ' + data.followUp);
-    } catch (error) {
-      console.error('Error completing workout:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
+  }, []);
 
   return (
     <Container maxWidth="md">
@@ -71,6 +62,8 @@ const WorkoutPlan = () => {
       </Typography>
       {loading ? (
         <CircularProgress />
+      ) : error ? (
+        <Typography color="error" align="center">{error}</Typography>
       ) : workoutPlan ? (
         <Card sx={{ mt: 3 }}>
           <CardContent>
@@ -82,24 +75,8 @@ const WorkoutPlan = () => {
                 <Typography key={index}>{line}</Typography>
               ))}
             </div>
-            <Button
-              variant="contained"
-              color="primary"
-              fullWidth
-              startIcon={<CheckCircle />}
-              onClick={() => handleCompleteWorkout(1)}
-            >
+            <Button variant="contained" color="primary" fullWidth startIcon={<CheckCircle />}>
               Mark as Complete
-            </Button>
-            <Button
-              variant="outlined"
-              color="secondary"
-              fullWidth
-              startIcon={<AccessTime />}
-              onClick={() => navigate('/consultation')}
-              sx={{ mt: 2 }}
-            >
-              Consult Further
             </Button>
           </CardContent>
         </Card>

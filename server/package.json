@@ -1,19 +1,19 @@
 {
     "name": "server",
     "version": "1.0.0",
-    "type": "module", 
+    "type": "module",
     "scripts": {
-      "start": "node index.js",
-      "dev": "nodemon index.js"
+        "start": "node index.js",
+        "dev": "nodemon index.js"
     },
     "dependencies": {
-      "cors": "^2.8.5",
-      "dotenv": "^16.0.3",
-      "express": "^4.21.0",
-      "express-rate-limit": "^7.4.0",
-      "helmet": "^7.1.0",
-      "openai": "^4.61.0",
-      "supabase": "^1.192.5"
+        "body-parser": "^1.20.3",
+        "cors": "^2.8.5",
+        "dotenv": "^16.0.3",
+        "express": "^4.21.0",
+        "express-rate-limit": "^7.4.0",
+        "helmet": "^7.1.0",
+        "openai": "^4.61.0",
+        "supabase": "^1.192.5"
     }
-  }
-  
+}

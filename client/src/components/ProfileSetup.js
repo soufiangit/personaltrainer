@@ -39,14 +39,14 @@ const ProfileSetup = () => {
   const [gender, setGender] = useState('');
   const [weight, setWeight] = useState('');
   const [height, setHeight] = useState('');
-  const [bodyFat, setBodyFat] = useState('');
+  const [bodyFat, setBodyFat] = useState(''); // Optional
   const [goal, setGoal] = useState('');
   const [activityLevel, setActivityLevel] = useState('');
   const [workoutDays, setWorkoutDays] = useState('');
   const [preferredTime, setPreferredTime] = useState('');
-  const [dietPreference, setDietPreference] = useState('');
-  const [injuries, setInjuries] = useState('');
-  const [sports, setSports] = useState('');
+  const [dietPreference, setDietPreference] = useState(''); // Optional
+  const [injuries, setInjuries] = useState(''); // Optional
+  const [sports, setSports] = useState(''); // Boolean: Yes or No
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
   const navigate = useNavigate();
@@ -101,7 +101,6 @@ const ProfileSetup = () => {
       }
     }
   };
-  
 
   // Validation function for each field
   const validateForm = () => {
@@ -146,8 +145,34 @@ const ProfileSetup = () => {
       }
     }
 
+    if (activeStep === 3) {
+      if (!injuries) {
+        formErrors.injuries = 'Injuries field is required, even if you have none.';
+      }
+      if (!sports) {
+        formErrors.sports = 'Athlete status must be selected.';
+      }
+    }
+
     setErrors(formErrors);
     return Object.keys(formErrors).length === 0; // Only move to the next step if there are no validation errors
+  };
+
+  // Autofill for testing purposes
+  const autofillProfile = () => {
+    setFullName('John Doe');
+    setAge(30);
+    setGender('Male');
+    setWeight(75);
+    setHeight(180);
+    setBodyFat(15); // Optional
+    setGoal('Lose Weight');
+    setActivityLevel('Moderately Active');
+    setWorkoutDays(5);
+    setPreferredTime('Morning');
+    setDietPreference('Vegan'); // Optional
+    setInjuries('None'); // Optional
+    setSports('No'); // Non-athlete
   };
 
   const renderStepContent = (step) => {
@@ -258,135 +283,133 @@ const ProfileSetup = () => {
             </Card>
           </Fade>
         );
-      // Fitness Goals & Experience step
       case 2:
         return (
-            <Fade in>
-                <Card sx={{ mt: 3 }}>
-                    <CardContent>
-                        <Typography variant="h6" gutterBottom>
-                            <AccessibilityNew /> Fitness Goals & Experience
+          <Fade in>
+            <Card sx={{ mt: 3 }}>
+              <CardContent>
+                <Typography variant="h6" gutterBottom>
+                  <AccessibilityNew /> Fitness Goals & Experience
+                </Typography>
+                <Grid container spacing={2}>
+                  <Grid item xs={12}>
+                    <FormControl fullWidth error={!!errors.goal}>
+                      <InputLabel>Fitness Goal</InputLabel>
+                      <Select
+                        value={goal}
+                        onChange={(e) => setGoal(e.target.value)}
+                        label="Fitness Goal"
+                      >
+                        <MenuItem value="Lose Weight">Lose Weight</MenuItem>
+                        <MenuItem value="Build Muscle">Build Muscle</MenuItem>
+                        <MenuItem value="Improve Endurance">Improve Endurance</MenuItem>
+                      </Select>
+                      {errors.goal && (
+                        <Typography color="error" variant="caption">
+                          {errors.goal}
                         </Typography>
-                        <Grid container spacing={2}>
-                            <Grid item xs={12}>
-                                <FormControl fullWidth error={!!errors.goal}>
-                                    <InputLabel>Fitness Goal</InputLabel>
-                                    <Select
-                                        value={goal}
-                                        onChange={(e) => setGoal(e.target.value)}
-                                        label="Fitness Goal"
-                                    >
-                                        <MenuItem value="Lose Weight">Lose Weight</MenuItem>
-                                        <MenuItem value="Build Muscle">Build Muscle</MenuItem>
-                                        <MenuItem value="Improve Endurance">Improve Endurance</MenuItem>
-                                    </Select>
-                                    {errors.goal && (
-                                        <Typography color="error" variant="caption">
-                                            {errors.goal}
-                                        </Typography>
-                                    )}
-                                </FormControl>
-                            </Grid>
-                            <Grid item xs={12}>
-                                <FormControl fullWidth error={!!errors.activityLevel}>
-                                    <InputLabel>Activity Level</InputLabel>
-                                    <Select
-                                        value={activityLevel}
-                                        onChange={(e) => setActivityLevel(e.target.value)}
-                                        label="Activity Level"
-                                    >
-                                        <MenuItem value="Sedentary">Sedentary</MenuItem>
-                                        <MenuItem value="Lightly Active">Lightly Active</MenuItem>
-                                        <MenuItem value="Moderately Active">Moderately Active</MenuItem>
-                                        <MenuItem value="Very Active">Very Active</MenuItem>
-                                    </Select>
-                                    {errors.activityLevel && (
-                                        <Typography color="error" variant="caption">
-                                            {errors.activityLevel}
-                                        </Typography>
-                                    )}
-                                </FormControl>
-                            </Grid>
-                            <Grid item xs={6}>
-                                <TextField
-                                    label="Workout Days per Week"
-                                    variant="outlined"
-                                    fullWidth
-                                    type="number"
-                                    value={workoutDays}
-                                    onChange={(e) => setWorkoutDays(e.target.value)}
-                                    error={!!errors.workoutDays}
-                                    helperText={errors.workoutDays}
-                                />
-                            </Grid>
-                            <Grid item xs={6}>
-                                <FormControl fullWidth error={!!errors.preferredTime}>
-                                    <InputLabel>Preferred Workout Time</InputLabel>
-                                    <Select
-                                      value={preferredTime}
-                                      onChange={(e) => setPreferredTime(e.target.value)}
-                                      label="Preferred Workout Time"
-                                    >
-                                      <MenuItem value="Morning">Morning</MenuItem>
-                                      <MenuItem value="Afternoon">Afternoon</MenuItem>
-                                      <MenuItem value="Evening">Evening</MenuItem>
-                                    </Select>
-                                    {errors.preferredTime && (
-                                      <Typography color="error" variant="caption">
-                                        {errors.preferredTime}
-                                      </Typography>
-                                    )}
-                                </FormControl>
-                            </Grid>
-                        </Grid>
-                    </CardContent>
-                </Card>
-            </Fade>
+                      )}
+                    </FormControl>
+                  </Grid>
+                  <Grid item xs={12}>
+                    <FormControl fullWidth error={!!errors.activityLevel}>
+                      <InputLabel>Activity Level</InputLabel>
+                      <Select
+                        value={activityLevel}
+                        onChange={(e) => setActivityLevel(e.target.value)}
+                        label="Activity Level"
+                      >
+                        <MenuItem value="Sedentary">Sedentary</MenuItem>
+                        <MenuItem value="Lightly Active">Lightly Active</MenuItem>
+                        <MenuItem value="Moderately Active">Moderately Active</MenuItem>
+                        <MenuItem value="Very Active">Very Active</MenuItem>
+                      </Select>
+                      {errors.activityLevel && (
+                        <Typography color="error" variant="caption">
+                          {errors.activityLevel}
+                        </Typography>
+                      )}
+                    </FormControl>
+                  </Grid>
+                  <Grid item xs={6}>
+                    <TextField
+                      label="Workout Days per Week"
+                      variant="outlined"
+                      fullWidth
+                      type="number"
+                      value={workoutDays}
+                      onChange={(e) => setWorkoutDays(e.target.value)}
+                      error={!!errors.workoutDays}
+                      helperText={errors.workoutDays}
+                    />
+                  </Grid>
+                  <Grid item xs={6}>
+                    <FormControl fullWidth error={!!errors.preferredTime}>
+                      <InputLabel>Preferred Workout Time</InputLabel>
+                      <Select
+                        value={preferredTime}
+                        onChange={(e) => setPreferredTime(e.target.value)}
+                        label="Preferred Workout Time"
+                      >
+                        <MenuItem value="Morning">Morning</MenuItem>
+                        <MenuItem value="Afternoon">Afternoon</MenuItem>
+                        <MenuItem value="Evening">Evening</MenuItem>
+                      </Select>
+                      {errors.preferredTime && (
+                        <Typography color="error" variant="caption">
+                          {errors.preferredTime}
+                        </Typography>
+                      )}
+                    </FormControl>
+                  </Grid>
+                </Grid>
+              </CardContent>
+            </Card>
+          </Fade>
         );
-        case 3:
-  return (
-    <Fade in>
-      <Card sx={{ mt: 3 }}>
-        <CardContent>
-          <Typography variant="h6" gutterBottom>
-            <Sports /> Physical Condition & Sports
-          </Typography>
-          <Grid container spacing={2}>
-            <Grid item xs={12}>
-              <TextField
-                label="Injuries (if any)"
-                variant="outlined"
-                fullWidth
-                value={injuries}
-                onChange={(e) => setInjuries(e.target.value)}
-                error={!!errors.injuries}
-                helperText={errors.injuries}
-              />
-            </Grid>
-            <Grid item xs={12}>
-              <FormControl fullWidth error={!!errors.sports}>
-                <InputLabel>Athlete</InputLabel>
-                <Select
-                  value={sports}
-                  onChange={(e) => setSports(e.target.value)}
-                  label="Athlete"
-                >
-                  <MenuItem value="Yes">Yes</MenuItem>
-                  <MenuItem value="No">No</MenuItem>
-                </Select>
-                {errors.sports && (
-                  <Typography color="error" variant="caption">
-                    {errors.sports}
-                  </Typography>
-                )}
-              </FormControl>
-            </Grid>
-          </Grid>
-        </CardContent>
-      </Card>
-    </Fade>
-  );
-
+      case 3:
+        return (
+          <Fade in>
+            <Card sx={{ mt: 3 }}>
+              <CardContent>
+                <Typography variant="h6" gutterBottom>
+                  <Sports /> Physical Condition & Sports
+                </Typography>
+                <Grid container spacing={2}>
+                  <Grid item xs={12}>
+                    <TextField
+                      label="Injuries (if any)"
+                      variant="outlined"
+                      fullWidth
+                      value={injuries}
+                      onChange={(e) => setInjuries(e.target.value)}
+                      error={!!errors.injuries}
+                      helperText={errors.injuries}
+                    />
+                  </Grid>
+                  <Grid item xs={12}>
+                    <FormControl fullWidth error={!!errors.sports}>
+                      <InputLabel>Athlete</InputLabel>
+                      <Select
+                        value={sports}
+                        onChange={(e) => setSports(e.target.value)}
+                        label="Athlete"
+                      >
+                        <MenuItem value="Yes">Yes</MenuItem>
+                        <MenuItem value="No">No</MenuItem>
+                      </Select>
+                      {errors.sports && (
+                        <Typography color="error" variant="caption">
+                          {errors.sports}
+                        </Typography>
+                      )}
+                    </FormControl>
+                  </Grid>
+                </Grid>
+              </CardContent>
+            </Card>
+          </Fade>
+        );
       default:
         return 'Unknown step';
     }
@@ -407,7 +430,12 @@ const ProfileSetup = () => {
           Complete Your Profile
         </Typography>
 
-        <Stepper activeStep={activeStep} alternativeLabel>
+        {/* Autofill Button at the top */}
+        <Button variant="outlined" color="secondary" onClick={autofillProfile} disabled={loading}>
+          Autofill Profile for Testing
+        </Button>
+
+        <Stepper activeStep={activeStep} alternativeLabel sx={{ mt: 2 }}>
           {steps.map((label) => (
             <Step key={label}>
               <StepLabel>{label}</StepLabel>
